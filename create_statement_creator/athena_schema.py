@@ -1,16 +1,21 @@
 from avro.schema import Parse, RecordSchema, PrimitiveSchema, ArraySchema, MapSchema, EnumSchema, UnionSchema, FixedSchema
+from typing import List, Tuple
 
-
-def create_athena_schema_from_avro(avro_schema_literal: str) -> str:
+def create_athena_schema_from_avro(avro_schema_literal: str, partitions: List[str] = []) -> Tuple[str, str]:
     avro_schema: RecordSchema = Parse(avro_schema_literal)
 
     column_schemas = []
+    partitions_schemas = []
     for field in avro_schema.fields:
         column_name = field.name.lower()
         column_type = create_athena_column_schema(field.type)
-        column_schemas.append(f"`{column_name}` {column_type}")
 
-    return ', '.join(column_schemas)
+        if column_name in partitions:
+            partitions_schemas.append(f"`{column_name}` {column_type}")
+        else:
+            column_schemas.append(f"`{column_name}` {column_type}")
+
+    return ', \n'.join(column_schemas), ', '.join(partitions_schemas)
 
 
 def create_athena_column_schema(avro_schema) -> str:
