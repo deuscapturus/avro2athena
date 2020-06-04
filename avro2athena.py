@@ -29,7 +29,7 @@ else:
 
 
 print(f'''
-CREATE DATABASE IF NOT EXISTS {{ athena_database }}
+CREATE DATABASE IF NOT EXISTS {args.athena_database}
 ''')
 
 print(f'''

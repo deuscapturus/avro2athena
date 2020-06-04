@@ -1,15 +1,55 @@
 # avro2athena
 
-* Generates a `create table` statement for AWS Athena from an avro schema.
+* Generates a `create table` statement for AWS Athena from an avro schema or schema registry (CLI).
 * The statement can be used to create an Athena table from (partitioned) avro files.
+* Avoids the need of crawling avro data with AWS Glue
 
-### Usage
+## CLI Usage
+
+* Install dependencies `pip install -r requirements.txt --user`
+* See `./avro2athena.py --help`
+
+### Example
+
+```
+/avro2athena.py http://schema-registry.domain.com:8081 topic.StackExchangePosts-value stack_exchange posts s3://bucket/dir --partition community
+```
+Creates the following Athena `CREATE TABLE` output:
+```
+CREATE DATABASE IF NOT EXISTS stack_exchange
+
+
+CREATE EXTERNAL TABLE IF NOT EXISTS
+`stack_exchange`.`posts`
+(`id` int, 
+`title` string, 
+`body` string, 
+`tags` array<string>, 
+`post_type_id` int, 
+`parent_id` int, 
+`accepted_answer_id` int, 
+`score` int, 
+`view_count` int, 
+`creation_date` string, 
+`last_edit_date` string, 
+`favorite_count` int, 
+`closed_date` string)
+PARTITIONED BY (`community` string)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+WITH SERDEPROPERTIES ('avro.schema.literal'='{"type":"record","name":"StackExchangePosts","namespace":"topic.StackExchangePosts","fields":[{"name":"community","type":"string"},{"name":"id","type":"int"},{"name":"title","type":["null","string"],"default":null},{"name":"body","type":"string"},{"name":"tags","type":{"type":"array","items":"string"}},{"name":"post_type_id","type":"int"},{"name":"parent_id","type":["null","int"],"default":null},{"name":"accepted_answer_id","type":["null","int"],"default":null},{"name":"score","type":"int"},{"name":"view_count","type":"int"},{"name":"creation_date","type":{"type":"string","logicalType":"iso-datetime"}},{"name":"last_edit_date","type":["null",{"type":"string","logicalType":"iso-datetime"}],"default":null},{"name":"favorite_count","type":"int"},{"name":"closed_date","type":["null",{"type":"string","logicalType":"iso-datetime"}],"default":null}]}')
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+LOCATION 's3://bucket/dir';
+```
+
+## Module Usage
 
 * See the example in `run_example.py`. It works in `python3.7` with `avro-python3==1.9.1`.
 * The partition statement is optional. It should be of the form `PARTITIONED BY (year string, month string, day string)`. If you don't have partitions, set `partition_statement = ''`.
 * It is assumed that the most outer schema type is `Record`.
 * Aliases in the avro schema are allowed.
 * The schema tree is analyzed recursively, so trees of arbitrary depth are allowed.
+
 
 ### Example
 Taking the following standard example schema as input:

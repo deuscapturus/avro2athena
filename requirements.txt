@@ -1,1 +1,2 @@
 avro-python3==1.9.1
+confluent_kafka==1.4.2
